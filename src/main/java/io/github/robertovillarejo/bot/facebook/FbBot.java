@@ -1,6 +1,5 @@
 package io.github.robertovillarejo.bot.facebook;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
@@ -8,19 +7,15 @@ import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
-import org.springframework.util.StringUtils;
 
 import ai.api.model.AIRequest;
 import ai.api.model.AIResponse;
-import ai.api.model.ResponseMessage;
-import ai.api.model.ResponseMessage.ResponseQuickReply;
-import ai.api.model.ResponseMessage.ResponseSpeech;
+import io.github.robertovillarejo.bot.dialogflow.FacebookConverter;
 import io.github.robertovillarejo.bot.nlp.NlpService;
 import me.ramswaroop.jbot.core.common.Controller;
 import me.ramswaroop.jbot.core.common.EventType;
 import me.ramswaroop.jbot.core.common.JBot;
 import me.ramswaroop.jbot.core.facebook.Bot;
-import me.ramswaroop.jbot.core.facebook.models.Button;
 import me.ramswaroop.jbot.core.facebook.models.Event;
 import me.ramswaroop.jbot.core.facebook.models.Message;
 import me.ramswaroop.jbot.core.facebook.models.Payload;
@@ -82,44 +77,22 @@ public class FbBot extends Bot {
     @Controller(events = { EventType.MESSAGE })
     public void handleMessage(Event event) {
         AIResponse response = nlpService.talk(new AIRequest(event.getMessage().getText()));
-        reply(event, toFacebookMessage(response, event));
+        List<Message> messages = FacebookConverter.map(response);
+        messages.forEach(message -> reply(event, message));
     }
 
     @Controller(events = { EventType.QUICK_REPLY })
-    public void handlePostback(Event event) {
+    public void handleQuickReply(Event event) {
         AIResponse response = nlpService.talk(new AIRequest(event.getMessage().getQuickReply().getPayload()));
-        reply(event, toFacebookMessage(response, event));
+        List<Message> messages = FacebookConverter.map(response);
+        messages.forEach(message -> reply(event, message));
     }
 
-    public Message toFacebookMessage(AIResponse response, Event event) {
-        Message msg = new Message();
-        String speech = response.getResult().getFulfillment().getSpeech();
-        if (!StringUtils.isEmpty(speech)) {
-            msg.setText(speech);
-        }
-        List<ResponseMessage> msgs = response.getResult().getFulfillment().getMessages();
-        List<Button> buttons = new ArrayList<>();
-        if (!msgs.isEmpty()) {
-            msgs.stream().forEach(responseMsg -> {
-                if (responseMsg instanceof ResponseQuickReply) {
-                    ((ResponseQuickReply) responseMsg).getReplies().forEach(reply -> {
-                        Button buttonReply = new Button();
-                        buttonReply.setTitle(reply);
-                        buttonReply.setPayload(reply);
-                        buttonReply.setContentType("text");
-                        buttons.add(buttonReply);
-                    });
-                } else if (responseMsg instanceof ResponseSpeech) {
-                    String buttonSpeech = ((ResponseSpeech) responseMsg).getSpeech().get(0);
-                    msg.setText(buttonSpeech);
-                    reply(event, buttonSpeech);
-                }
-            });
-        }
-        if (!buttons.isEmpty()) {
-            msg.setQuickReplies(buttons.stream().toArray(Button[]::new));
-        }
-        return msg;
+    @Controller(events = { EventType.POSTBACK })
+    public void handlePostback(Event event) {
+        AIResponse response = nlpService.talk(new AIRequest(event.getPostback().getPayload()));
+        List<Message> messages = FacebookConverter.map(response);
+        messages.forEach(message -> reply(event, message));
     }
 
     // /**
