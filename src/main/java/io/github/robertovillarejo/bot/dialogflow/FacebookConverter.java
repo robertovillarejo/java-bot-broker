@@ -6,24 +6,16 @@ import java.util.List;
 import ai.api.model.AIResponse;
 import ai.api.model.ResponseMessage;
 import ai.api.model.ResponseMessage.Platform;
+import ai.api.model.ResponseMessage.ResponseImage;
 import ai.api.model.ResponseMessage.ResponseQuickReply;
 import ai.api.model.ResponseMessage.ResponseSpeech;
 import me.ramswaroop.jbot.core.facebook.models.Button;
-import me.ramswaroop.jbot.core.facebook.models.Element;
 import me.ramswaroop.jbot.core.facebook.models.Message;
 
 public class FacebookConverter {
 
-    public String toText(AIResponse response) {
-        return null;
-    }
+    private FacebookConverter() {
 
-    public Element toImage(AIResponse response) {
-        return null;
-    }
-
-    public Button[] toQuickReplies() {
-        return null;
     }
 
     public static List<Message> map(AIResponse response) {
@@ -58,36 +50,45 @@ public class FacebookConverter {
         return messages;
     }
 
+    public static Message toMessage(ResponseImage image) {
+        return new Message();
+    }
+
+    public static Message toMessage(ResponseQuickReply quickReply) {
+        Message msg = new Message();
+        List<Button> buttons = new ArrayList<>();
+
+        quickReply.getReplies().forEach(reply -> {
+            Button buttonReply = new Button();
+            buttonReply.setTitle(reply);
+            buttonReply.setPayload(reply);
+            buttonReply.setContentType("text");
+            buttons.add(buttonReply);
+        });
+        msg.setQuickReplies(buttons.stream().toArray(Button[]::new));
+        msg.setText(quickReply.getTitle());
+        return msg;
+    }
+
+    public static Message toMessage(ResponseSpeech speech) {
+        Message msg = new Message();
+        String buttonSpeech = speech.getSpeech().get(0);
+        msg.setText(buttonSpeech);
+        return msg;
+    }
+
+    public static Message toMessage(ResponseMessage responseMessage) {
+        if (responseMessage instanceof ResponseSpeech) {
+            return toMessage((ResponseSpeech) responseMessage);
+        } else if (responseMessage instanceof ResponseQuickReply) {
+            return toMessage((ResponseQuickReply) responseMessage);
+        }
+        return new Message();
+    }
+
     // Map Response Messages to JBot Messages
     public static void mapResponses(ResponseMessage responseMessage, List<Message> messages) {
-        if (responseMessage instanceof ResponseSpeech) {
-            Message msg = new Message();
-            String buttonSpeech = ((ResponseSpeech) responseMessage).getSpeech().get(0);
-            msg.setText(buttonSpeech);
-            messages.add(msg);
-        } else if (responseMessage instanceof ResponseQuickReply) {
-            Message msg = new Message();
-            List<Button> buttons = new ArrayList<>();
-
-            ResponseQuickReply quickReply = (ResponseQuickReply) responseMessage;
-
-            quickReply.getReplies().forEach(reply -> {
-                Button buttonReply = new Button();
-                buttonReply.setTitle(reply);
-                buttonReply.setPayload(reply);
-                buttonReply.setContentType("text");
-                buttons.add(buttonReply);
-            });
-            msg.setQuickReplies(buttons.stream().toArray(Button[]::new));
-            msg.setText(((ResponseQuickReply) responseMessage).getTitle());
-            int indexToAdd;
-            if (messages.isEmpty()) {
-                indexToAdd = 0;
-            } else {
-                indexToAdd = messages.size() - 1;
-            }
-            messages.add(indexToAdd, msg);
-        }
+        messages.add(toMessage(responseMessage));
     }
 
 }

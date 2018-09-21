@@ -1,5 +1,6 @@
 package io.github.robertovillarejo.bot.services;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -10,6 +11,7 @@ public class ChuckNorrisJokesService implements JokeService {
 
     private RestTemplate restTemplate;
 
+    @Autowired
     public ChuckNorrisJokesService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
