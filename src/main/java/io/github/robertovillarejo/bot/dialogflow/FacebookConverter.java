@@ -5,6 +5,7 @@ import java.util.List;
 
 import ai.api.model.AIResponse;
 import ai.api.model.ResponseMessage;
+import ai.api.model.ResponseMessage.Platform;
 import ai.api.model.ResponseMessage.ResponseQuickReply;
 import ai.api.model.ResponseMessage.ResponseSpeech;
 import me.ramswaroop.jbot.core.facebook.models.Button;
@@ -32,10 +33,16 @@ public class FacebookConverter {
             return messages;
         }
 
+        // Response messages defined in DialogFlow
         List<ResponseMessage> msgs = response.getResult().getFulfillment().getMessages();
 
-        msgs.stream().forEach(responseMsg -> responseMessageFactory(responseMsg, messages));
+        // Map Response Messages to Jbot Messages
+        // And add them to list
+        msgs.stream().filter(responseMsg -> Platform.FACEBOOK.equals(responseMsg.getPlatform()))
+                .forEach(responseMsg -> mapResponses(responseMsg, messages));
 
+        // Sort messages
+        // Quick replies are moved to end
         messages.sort((Message m1, Message m2) -> {
             int l1 = 0;
             if (m1.getQuickReplies() != null) {
@@ -51,7 +58,8 @@ public class FacebookConverter {
         return messages;
     }
 
-    public static void responseMessageFactory(ResponseMessage responseMessage, List<Message> messages) {
+    // Map Response Messages to JBot Messages
+    public static void mapResponses(ResponseMessage responseMessage, List<Message> messages) {
         if (responseMessage instanceof ResponseSpeech) {
             Message msg = new Message();
             String buttonSpeech = ((ResponseSpeech) responseMessage).getSpeech().get(0);
