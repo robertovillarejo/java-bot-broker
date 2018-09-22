@@ -18,7 +18,7 @@ public class ChuckNorrisJokesService implements JokeService {
 
     @Override
     public String getJoke() {
-        return restTemplate.getForObject(CHUCK_NORRIS_API_URL, String.class);
+        return "Por qué cruzó la gallina?";
     }
 
 }

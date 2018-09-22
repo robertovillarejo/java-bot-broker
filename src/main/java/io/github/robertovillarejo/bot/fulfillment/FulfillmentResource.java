@@ -1,6 +1,7 @@
 package io.github.robertovillarejo.bot.fulfillment;
 
-import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,10 +13,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-import ai.api.model.AIResponse;
 import ai.api.model.Fulfillment;
 import ai.api.model.ResponseMessage;
 import ai.api.model.ResponseMessage.ResponseSpeech;
+import io.github.robertovillarejo.bot.dialogflow.AIWebhookRequest;
 import io.github.robertovillarejo.bot.services.JokeService;
 
 @RestController
@@ -33,15 +34,18 @@ public class FulfillmentResource {
 
     @PostMapping("/fulfillment")
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public Fulfillment fulfillment(@RequestBody AIResponse response) {
+    public Fulfillment fulfillment(@RequestBody AIWebhookRequest response) {
         Fulfillment fulfillment = new Fulfillment();
+        List<ResponseMessage> messages = new ArrayList<>();
         switch (response.getResult().getAction()) {
         case "chuckNorrisJoke":
             LOGGER.debug("REST request to get a Chuck Norris Joke");
             String joke = jokeService.getJoke();
             ResponseSpeech speech = new ResponseMessage.ResponseSpeech();
             speech.setSpeech(joke);
-            fulfillment.getMessages().add(speech);
+            messages.add(speech);
+            // fulfillment.setMessages(messages);
+            fulfillment.setSpeech(joke);
             break;
         case "action":
             break;
@@ -49,17 +53,6 @@ public class FulfillmentResource {
             break;
         }
         return fulfillment;
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    class AIWebhookRequest extends AIResponse implements Serializable {
-        /**
-         * 
-         */
-        private static final long serialVersionUID = -4979110733631672264L;
-
-        public AIWebhookRequest() {
-        }
     }
 
 }
